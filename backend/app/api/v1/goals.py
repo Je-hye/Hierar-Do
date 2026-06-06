@@ -1,7 +1,7 @@
 import json
 import re
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -34,6 +34,7 @@ async def create_goal(
     req: CreateGoalRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     state = {
+        "user_id": current_user.id,
         "raw_input": req.raw_input,
         # AvailableHours Pydantic 모델 → dict로 변환하여 state에 전달
         "available_hours": req.available_hours.model_dump(),
@@ -135,7 +136,7 @@ async def delete_goal(goal_id: int, db: AsyncSession = Depends(get_db), current_
 
 @router.patch("/{goal_id}/status", response_model=GoalOut)
 async def update_goal_status(
-    goal_id: int, req: UpdateGoalStatusRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
+    goal_id: int, req: UpdateGoalStatusRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     rows = await db.execute(
         select(Goal)
@@ -145,9 +146,17 @@ async def update_goal_status(
     goal = rows.scalar_one_or_none()
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
+        
+    old_status = goal.status
     goal.status = req.status
     await db.commit()
     await db.refresh(goal)
+    
+    # 목표가 새로 완료(done) 처리된 경우 배경에서 임베딩 저장
+    if old_status != GoalStatus.done and req.status == GoalStatus.done:
+        from app.agent.embeddings import store_goal_embedding
+        background_tasks.add_task(store_goal_embedding, goal.id, current_user.id)
+
     rows = await db.execute(
         select(Goal)
         .where(Goal.id == goal_id)

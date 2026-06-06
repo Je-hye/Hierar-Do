@@ -7,6 +7,10 @@ asyncio + run_sync 패턴으로 실행합니다.
 import asyncio
 import os
 from logging.config import fileConfig
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
