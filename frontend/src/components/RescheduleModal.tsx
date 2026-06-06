@@ -10,7 +10,7 @@ interface RescheduleModalProps {
   isApplying: boolean;
 }
 
-const TODAY_STR = new Date().toISOString().slice(0, 10);
+const TODAY_STR = new Intl.DateTimeFormat("sv").format(new Date()); // 로컬 타임존 YYYY-MM-DD
 
 export function RescheduleModal({
   items,

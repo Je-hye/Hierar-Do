@@ -11,36 +11,45 @@ export function GoalModal({ onClose }: GoalModalProps) {
   const [rawInput, setRawInput] = useState("");
   const [weekday, setWeekday] = useState(2);
   const [weekend, setWeekend] = useState(4);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
-  const { mutate: createGoal, isPending, isError } = useCreateGoal(onClose);
+  const { mutate: createGoal, isPending } = useCreateGoal(onClose);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      // 생성 중에는 Escape 키로 닫기 방지 (#15)
+      if (e.key === "Escape" && !isPending) onClose();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+  }, [onClose, isPending]);
 
   function handleBackdropClick(e: React.MouseEvent) {
-    if (e.target === backdropRef.current) onClose();
+    // 생성 중에는 백드롭 클릭으로 닫기 방지 (#15)
+    if (!isPending && e.target === backdropRef.current) onClose();
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!rawInput.trim()) return;
-    createGoal({
-      raw_input: rawInput.trim(),
-      available_hours: { weekday, weekend },
-    });
+    setErrorMsg(null);
+    createGoal(
+      { raw_input: rawInput.trim(), available_hours: { weekday, weekend } },
+      {
+        onError: (err: Error) => {
+          // 백엔드 detail 메시지를 사용자에게 직접 표시 (#16)
+          setErrorMsg(err.message || "목표 생성 중 오류가 발생했어요. 다시 시도해 주세요.");
+        },
+      }
+    );
   }
 
   return (
     <div
       ref={backdropRef}
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 ${isPending ? "cursor-not-allowed" : ""}`}
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 flex flex-col gap-5">
         <h2 className="text-xl font-extrabold text-primary">새 목표 만들기</h2>
@@ -56,7 +65,8 @@ export function GoalModal({ onClose }: GoalModalProps) {
               onChange={(e) => setRawInput(e.target.value)}
               placeholder="예: 이번 달 안에 토익 900점 받고 싶어"
               rows={3}
-              className="border border-outline-variant rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              disabled={isPending}
+              className="border border-outline-variant rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
             />
           </div>
 
@@ -69,10 +79,11 @@ export function GoalModal({ onClose }: GoalModalProps) {
                 id="weekday-hours"
                 type="number"
                 min={1}
-                max={12}
+                max={24}
                 value={weekday}
-                onChange={(e) => setWeekday(Math.min(12, Math.max(1, Number(e.target.value))))}
-                className="border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                disabled={isPending}
+                onChange={(e) => setWeekday(Math.min(24, Math.max(1, Number(e.target.value))))}
+                className="border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -83,10 +94,11 @@ export function GoalModal({ onClose }: GoalModalProps) {
                 id="weekend-hours"
                 type="number"
                 min={1}
-                max={12}
+                max={24}
                 value={weekend}
-                onChange={(e) => setWeekend(Math.min(12, Math.max(1, Number(e.target.value))))}
-                className="border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                disabled={isPending}
+                onChange={(e) => setWeekend(Math.min(24, Math.max(1, Number(e.target.value))))}
+                className="border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
               />
             </div>
           </div>
@@ -96,12 +108,22 @@ export function GoalModal({ onClose }: GoalModalProps) {
             disabled={isPending || !rawInput.trim()}
             className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
           >
-            {isPending ? "생성 중..." : "목표 생성"}
+            {isPending ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                AI가 일정을 생성하는 중...
+              </span>
+            ) : (
+              "목표 생성"
+            )}
           </button>
 
-          {isError && (
-            <p className="text-sm text-error text-center">
-              목표 생성 중 오류가 발생했어요. 다시 시도해 주세요.
+          {errorMsg && (
+            <p className="text-sm text-error text-center bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {errorMsg}
             </p>
           )}
         </form>

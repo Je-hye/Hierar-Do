@@ -4,6 +4,8 @@ from app.agent.state import HierarDoState, ParsedMilestone
 
 
 def schedule_node(state: HierarDoState) -> dict:
+    if state.get("error") or not state.get("goal") or not state.get("milestones"):
+        return {}
     goal = state["goal"]
     milestones = state["milestones"]
     today = date.today()

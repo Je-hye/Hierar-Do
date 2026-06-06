@@ -21,7 +21,7 @@ Return ONLY a valid JSON array:
 No explanation — JSON array only."""
 
 
-def decompose_node(state: HierarDoState) -> dict:
+async def decompose_node(state: HierarDoState) -> dict:
     if state.get("error") or state.get("goal") is None:
         return {}
     goal = state["goal"]
@@ -33,7 +33,7 @@ def decompose_node(state: HierarDoState) -> dict:
         f"weekend: {state['available_hours'].get('weekend', 4)}h"
     )
     try:
-        response = client.messages.create(
+        response = await client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=4096,
             system=_SYSTEM,
@@ -42,7 +42,11 @@ def decompose_node(state: HierarDoState) -> dict:
         raw = response.content[0].text.strip()
         raw = re.sub(r"^```(?:json)?\s*", "", raw)
         raw = re.sub(r"\s*```$", "", raw)
-        data = json.loads(raw)
+        # JSON 배열만 추출 (앞뒤 설명 텍스트 방어)
+        match = re.search(r"\[.*\]", raw, re.DOTALL)
+        if not match:
+            return {"error": "decompose: JSON array not found in LLM response"}
+        data = json.loads(match.group())
         if len(data) != 4:
             return {"error": f"decompose: expected 4 milestones, got {len(data)}"}
         milestones = [

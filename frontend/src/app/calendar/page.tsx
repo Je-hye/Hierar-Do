@@ -2,24 +2,30 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useGoals, useToggleTodo, useReschedulePreview, useRescheduleApply } from "@/lib/queries";
+import { useGoals, useReschedulePreview, useRescheduleApply } from "@/lib/queries";
 import { MonthCalendar } from "@/components/MonthCalendar";
 import { WeekDetail } from "@/components/WeekDetail";
 import { RescheduleModal } from "@/components/RescheduleModal";
-import type { RescheduleItem, Todo } from "@/lib/types";
+import type { Milestone, RescheduleItem, Todo } from "@/lib/types";
 
 export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const offset = new Date().getTimezoneOffset();
+    const date = new Date(new Date().getTime() - offset * 60 * 1000);
+    return date.toISOString().split("T")[0];
   });
   const [rescheduleItems, setRescheduleItems] = useState<RescheduleItem[] | null>(null);
   const [noChanges, setNoChanges] = useState(false);
 
   const { data: goals = [], isLoading } = useGoals();
-  const { mutate: toggleTodo } = useToggleTodo();
   const { mutate: previewReschedule, isPending: isPreviewing } = useReschedulePreview();
   const { mutate: applyReschedule, isPending: isApplying } = useRescheduleApply();
+
+  // 모든 마일스톤을 평탄화 (할 일 추가 시 milestone 선택에 사용)
+  const allMilestones = useMemo<Milestone[]>(
+    () => goals.flatMap((g) => g.milestones),
+    [goals]
+  );
 
   const todosByDate = useMemo<Record<string, Todo[]>>(() => {
     const map: Record<string, Todo[]> = {};
@@ -95,8 +101,8 @@ export default function CalendarPage() {
             />
             <WeekDetail
               selectedDate={selectedDate}
+              milestones={allMilestones}
               todosByDate={todosByDate}
-              onToggle={(todoId, isDone) => toggleTodo({ todoId, isDone })}
             />
           </>
         )}

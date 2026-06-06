@@ -19,7 +19,7 @@ async def test_apply_empty_when_no_goals(client):
 async def test_preview_empty_when_all_todos_done(client, mock_pipeline):
     create_resp = await client.post(
         "/api/v1/goals",
-        json={"raw_input": "테스트", "available_hours": {"weekday": 2, "weekend": 4}},
+        json={"raw_input": "이번 달 토익 900점 목표", "available_hours": {"weekday": 2, "weekend": 4}},
     )
     todos = create_resp.json()["todos"]
     for todo in todos:
@@ -36,7 +36,7 @@ async def test_preview_returns_rescheduled_items(client, mock_pipeline):
     # algorithm redistributes from today → 8 of 12 get new dates
     await client.post(
         "/api/v1/goals",
-        json={"raw_input": "테스트", "available_hours": {"weekday": 2, "weekend": 4}},
+        json={"raw_input": "이번 달 토익 900점 목표", "available_hours": {"weekday": 2, "weekend": 4}},
     )
     resp = await client.post("/api/v1/reschedule/preview")
     assert resp.status_code == 200
@@ -53,7 +53,7 @@ async def test_preview_returns_rescheduled_items(client, mock_pipeline):
 async def test_apply_updates_todo_due_dates(client, mock_pipeline):
     await client.post(
         "/api/v1/goals",
-        json={"raw_input": "테스트", "available_hours": {"weekday": 2, "weekend": 4}},
+        json={"raw_input": "이번 달 토익 900점 목표", "available_hours": {"weekday": 2, "weekend": 4}},
     )
     preview_items = (await client.post("/api/v1/reschedule/preview")).json()
     assert len(preview_items) > 0
@@ -67,7 +67,7 @@ async def test_apply_updates_todo_due_dates(client, mock_pipeline):
 async def test_apply_is_idempotent(client, mock_pipeline):
     await client.post(
         "/api/v1/goals",
-        json={"raw_input": "테스트", "available_hours": {"weekday": 2, "weekend": 4}},
+        json={"raw_input": "이번 달 토익 900점 목표", "available_hours": {"weekday": 2, "weekend": 4}},
     )
     first = await client.post("/api/v1/reschedule/apply")
     assert first.json()["updated"] > 0
@@ -81,7 +81,7 @@ async def test_preview_excludes_done_goals(client, mock_pipeline):
     # Create a goal
     create_resp = await client.post(
         "/api/v1/goals",
-        json={"raw_input": "테스트", "available_hours": {"weekday": 2, "weekend": 4}},
+        json={"raw_input": "이번 달 토익 900점 목표", "available_hours": {"weekday": 2, "weekend": 4}},
     )
     goal_id = create_resp.json()["goal"]["id"]
 
