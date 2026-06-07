@@ -1,0 +1,75 @@
+response_format: "{code: str, message: str, detail: str}"
+
+categories:
+  "2xxx": 입력 유효성
+  "3xxx": 비즈니스 로직
+  "4xxx": LLM / 외부 서비스
+  "5xxx": 시스템 / DB
+
+errors:
+  E2001:
+    message: Invalid input
+    http: 400
+    description: 요청 바디 유효성 실패 (Pydantic)
+    retryable: false
+  E2002:
+    message: Missing required field
+    http: 400
+    description: 필수 필드 누락
+    retryable: false
+  E2003:
+    message: Invalid available_hours
+    http: 400
+    description: weekday/weekend 값이 0 이하이거나 24 초과
+    retryable: false
+  E3001:
+    message: Goal not found
+    http: 404
+    description: 존재하지 않는 goal_id
+    retryable: false
+  E3002:
+    message: Todo not found
+    http: 404
+    description: 존재하지 않는 todo_id
+    retryable: false
+  E3003:
+    message: Goal already done
+    http: 409
+    description: 완료된 목표는 수정 불가
+    retryable: false
+  E3004:
+    message: Schedule overflow
+    http: 422
+    description: available_hours 내에 Todo 배분 불가
+    retryable: false
+    detail_rule: 오버플로우 발생 날짜를 detail에 포함
+  E4001:
+    message: LLM parse failed
+    http: 502
+    description: parse_goal 노드에서 Claude API 응답 파싱 실패
+    retryable: true
+  E4002:
+    message: LLM decompose failed
+    http: 502
+    description: decompose 노드에서 마일스톤/Todo 생성 실패
+    retryable: true
+  E4003:
+    message: LLM timeout
+    http: 504
+    description: Claude API 응답 타임아웃
+    retryable: true
+  E5001:
+    message: Database error
+    http: 500
+    description: DB 쓰기/읽기 실패
+    retryable: false
+  E5002:
+    message: Pipeline error
+    http: 500
+    description: LangGraph 파이프라인 예상치 못한 실패
+    retryable: false
+
+rules:
+  - 5xxx 에러는 detail 필드에 내부 정보 노출 금지 — 로그에만 기록
+  - 4xxx 에러 응답에는 retryable 필드 포함
+  - 새 에러 추가 시 이 파일에 먼저 등록 후 구현
