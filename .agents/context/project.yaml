@@ -59,7 +59,9 @@ pipeline:
 git:
   default_branch: main
   commit_convention: [feat, fix, docs, chore, test, refactor]
-  merge_rule: self-review 후 merge
+  commit_format: "<type>(<scope>): <설명>"  # scope는 변경된 모듈 (auth, goal, schedule 등)
+  commit_granularity: 수용 기준 하나 = 커밋 하나  # 여러 기준 묶기 금지
+  merge_rule: squash merge (PR 전 WIP 커밋 squash 필수)
 
 roadmap:
   in_progress:
@@ -70,4 +72,7 @@ roadmap:
     - pgvector 기반 과거 목표 패턴 개인화
 
 docs:
-  design_spec: docs/superpowers/specs/2026-04-25-hierar-do-design.md
+  specs: docs/specs/
+  plans: docs/plans/
+  decisions: docs/decisions/
+  pre_mortem: docs/pre-mortem/
