@@ -1,0 +1,78 @@
+project:
+  name: Hierar-Do
+  purpose: 월간 목표를 자연어로 입력하면 AI 에이전트가 주간 마일스톤 → 일일 할 일로 자동 분해
+  status: mvp_development
+  pattern: semi-agentic  # AI가 제안, 사용자가 승인
+  current_user: user_id=1  # 단일 사용자, 인증 없음
+
+stack:
+  backend:
+    language: Python 3.11+
+    framework: FastAPI (async)
+    ai_pipeline: LangGraph
+    llm: claude-sonnet-4-6  # Anthropic SDK, parse_goal·decompose 노드에서만 호출
+    orm: SQLAlchemy (async)
+    validation: Pydantic v2
+    package_manager: Poetry
+  frontend:
+    language: TypeScript
+    framework: Next.js App Router
+    ui: Tailwind CSS + shadcn/ui
+    data_fetching: TanStack Query v5
+  database:
+    primary: PostgreSQL
+    vector: pgvector  # MVP 이후 개인화용 예약
+  infra:
+    local: Docker + Docker Compose
+    ci_cd: GitHub Actions
+
+structure:
+  backend: backend/app/
+  api: backend/app/api/v1/       # goals.py, todos.py
+  pipeline: backend/app/agent/   # graph.py, state.py, nodes/
+  models: backend/app/models/
+  schemas: backend/app/schemas/
+  frontend: frontend/src/
+
+pipeline:
+  nodes:
+    - name: parse_goal
+      llm: true
+      output: GoalSchema (title, deadline, category)
+    - name: decompose
+      llm: true
+      output: 마일스톤 4개 + Todo 목록 (estimated_minutes 포함)
+    - name: schedule
+      llm: false  # 순수 Python — 비용 최적화
+      output: due_date 배분 + 과부하 검증
+    - name: store
+      llm: false
+      output: DB 저장 (Goal / Milestone / Todo)
+  state:
+    raw_input: str
+    available_hours: "{weekday: int, weekend: int}"
+    goal: "GoalSchema | None"
+    milestones: list[MilestoneSchema]
+    todos: list[TodoSchema]
+    error: "str | None"
+
+git:
+  default_branch: main
+  commit_convention: [feat, fix, docs, chore, test, refactor]
+  commit_format: "<type>(<scope>): <설명>"  # scope는 변경된 모듈 (auth, goal, schedule 등)
+  commit_granularity: 수용 기준 하나 = 커밋 하나  # 여러 기준 묶기 금지
+  merge_rule: squash merge (PR 전 WIP 커밋 squash 필수)
+
+roadmap:
+  in_progress:
+    - 사용자 인증 (JWT)
+    - Google Calendar 연동
+    - 진척률 시각화
+    - suggest/apply 엔드포인트 (AI 재조정 제안)
+    - pgvector 기반 과거 목표 패턴 개인화
+
+docs:
+  specs: docs/specs/
+  plans: docs/plans/
+  decisions: docs/decisions/
+  pre_mortem: docs/pre-mortem/

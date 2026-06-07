@@ -1,5 +1,6 @@
 import enum
 from datetime import date, datetime
+from typing import Optional
 
 from sqlalchemy import Integer, String, Date, DateTime, Enum, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -25,6 +26,8 @@ class Goal(Base):
     status: Mapped[GoalStatus] = mapped_column(
         Enum(GoalStatus, native_enum=False), nullable=False, default=GoalStatus.active
     )
+    available_hours_weekday: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    available_hours_weekend: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
