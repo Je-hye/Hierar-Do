@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 from datetime import date
@@ -60,13 +61,31 @@ async def smart_reschedule_node(state: RescheduleState) -> dict:
         f"{pending_text}"
     )
     
+    max_retries = 3
+    response = None
+    last_exception = None
+    
+    for attempt in range(max_retries):
+        try:
+            response = await asyncio.wait_for(
+                client.messages.create(
+                    model="claude-sonnet-4-6",
+                    max_tokens=4096,
+                    system=_SYSTEM,
+                    messages=[{"role": "user", "content": prompt}],
+                ),
+                timeout=50.0
+            )
+            break
+        except Exception as e:
+            last_exception = e
+            if attempt < max_retries - 1:
+                await asyncio.sleep(2 ** attempt)
+                
+    if response is None:
+        return {"error": f"smart_reschedule: Claude API failed after {max_retries} attempts. Last error: {last_exception}"}
+        
     try:
-        response = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=4096,
-            system=_SYSTEM,
-            messages=[{"role": "user", "content": prompt}],
-        )
         raw = response.content[0].text.strip()
         raw = re.sub(r"^```(?:json)?\s*", "", raw)
         raw = re.sub(r"\s*```$", "", raw)
