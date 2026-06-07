@@ -132,10 +132,15 @@ POST `/api/v1/goals` 요청 예시:
 
 ## 문서 구조
 
-| 파일 | 내용 |
+| 경로 | 내용 |
 |------|------|
 | `docs/roadmap.md` | Phase별 기능 로드맵 + 기술 부채 목록 |
 | `docs/issues.md` | 코드 리뷰 보완 사항 (버그/보안/아키텍처/UX/테스트) |
+| `docs/specs/` | 기능별 설계 스펙 |
+| `docs/plans/` | 기능별 구현 플랜 |
 | `docs/stitch/` | UI 디자인 목업 (대시보드, 캘린더) |
-| `docs/superpowers/specs/` | 기능별 설계 스펙 |
-| `docs/superpowers/plans/` | 기능별 구현 플랜 |
+
+## 스킬 경로 오버라이드
+
+Specs: docs/specs/
+Plans: docs/plans/
