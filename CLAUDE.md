@@ -130,6 +130,12 @@ POST `/api/v1/goals` 요청 예시:
 - **MVP 제외 항목**: 인증, Google Calendar 연동, 진척률 시각화, suggest/apply 엔드포인트 (스텁만 정의).
 - **pgvector** — 향후 과거 목표 패턴 기반 개인화를 위해 예약.
 
-## 설계 스펙
+## 문서 구조
 
-전체 설계 스펙: `docs/superpowers/specs/2026-04-25-hierar-do-design.md`
+| 파일 | 내용 |
+|------|------|
+| `docs/roadmap.md` | Phase별 기능 로드맵 + 기술 부채 목록 |
+| `docs/issues.md` | 코드 리뷰 보완 사항 (버그/보안/아키텍처/UX/테스트) |
+| `docs/stitch/` | UI 디자인 목업 (대시보드, 캘린더) |
+| `docs/superpowers/specs/` | 기능별 설계 스펙 |
+| `docs/superpowers/plans/` | 기능별 구현 플랜 |
