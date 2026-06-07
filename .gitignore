@@ -17,3 +17,4 @@ node_modules/
 
 # Git worktrees
 .worktrees/
+.agents/artifacts

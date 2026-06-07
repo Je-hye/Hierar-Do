@@ -22,6 +22,7 @@ class ParsedGoal(BaseModel):
 
 
 class HierarDoState(TypedDict):
+    user_id: int
     raw_input: str
     available_hours: dict  # {"weekday": int, "weekend": int}
     goal: Optional[ParsedGoal]

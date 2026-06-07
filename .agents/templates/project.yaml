@@ -1,0 +1,32 @@
+project:
+  name: # 프로젝트명
+  purpose: # 한 줄 목적
+  status: # prototype | development | production
+  pattern: # 예: semi-agentic, event-driven 등
+
+stack:
+  backend:
+    language:
+    framework:
+    package_manager:
+  frontend:
+    language:
+    framework:
+  database:
+    primary:
+  infra:
+    local:
+    ci_cd:
+
+structure:
+  # 핵심 디렉터리만
+  # 예: backend: src/backend/
+
+git:
+  default_branch: main
+  commit_convention: [feat, fix, docs, chore, test, refactor]
+  merge_rule:
+
+roadmap:
+  in_progress: []
+  planned: []

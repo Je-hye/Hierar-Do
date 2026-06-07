@@ -1,3 +1,3 @@
 import anthropic
 
-client = anthropic.Anthropic()
+client = anthropic.AsyncAnthropic()
