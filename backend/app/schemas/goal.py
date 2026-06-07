@@ -19,6 +19,7 @@ class TodoOut(BaseModel):
     estimated_minutes: int
     is_done: bool
     suggested_by_ai: bool
+    actual_minutes: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
@@ -71,6 +72,7 @@ class UpdateTodoRequest(BaseModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=500)
     due_date: Optional[date] = None
     estimated_minutes: Optional[int] = Field(default=None, ge=1, le=1440)
+    actual_minutes: Optional[int] = Field(default=None, ge=0, le=1440)
 
 
 class CreateTodoRequest(BaseModel):
@@ -78,6 +80,7 @@ class CreateTodoRequest(BaseModel):
     title: str = Field(min_length=1, max_length=500)
     due_date: Optional[date] = None
     estimated_minutes: int = Field(default=30, ge=1, le=1440)
+    actual_minutes: Optional[int] = Field(default=None, ge=0, le=1440)
 
 
 class UpdateMilestoneRequest(BaseModel):

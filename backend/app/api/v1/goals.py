@@ -296,3 +296,100 @@ async def apply_suggestion(
     if count:
         await db.commit()
     return {"updated": count}
+
+
+@router.post("/{goal_id}/reschedule/smart", response_model=SuggestionResponse)
+async def smart_reschedule_goal(
+    goal_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    LangGraph reschedule_pipeline을 사용하여 목표 진척도를 분석하고
+    일일 가용 시간을 넘지 않도록 미완료 할 일들의 스마트 재조정 제안을 생성합니다.
+    """
+    from app.agent.reschedule_graph import reschedule_pipeline
+    from app.agent.state import RescheduleState, RescheduleMilestoneInfo, RescheduleTodoInfo
+
+    # 1. Goal 조회 및 검증
+    rows = await db.execute(
+        select(Goal)
+        .where(Goal.id == goal_id, Goal.user_id == current_user.id)
+        .options(selectinload(Goal.milestones).selectinload(Milestone.todos))
+    )
+    goal = rows.scalar_one_or_none()
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+        
+    if goal.status == GoalStatus.done:
+        raise HTTPException(status_code=400, detail="이미 완료된 목표는 재조정이 필요하지 않습니다.")
+
+    # 2. RescheduleState 준비
+    milestones_info = []
+    todo_map = {} # todo_id -> Todo mapping
+    for ms in goal.milestones:
+        todos_info = []
+        for todo in ms.todos:
+            todo_map[todo.id] = todo
+            todos_info.append(
+                RescheduleTodoInfo(
+                    id=todo.id,
+                    title=todo.title,
+                    due_date=todo.due_date,
+                    estimated_minutes=todo.estimated_minutes,
+                    actual_minutes=todo.actual_minutes,
+                    is_done=todo.is_done
+                )
+            )
+        milestones_info.append(
+            RescheduleMilestoneInfo(
+                id=ms.id,
+                title=ms.title,
+                week_number=ms.week_number,
+                todos=todos_info
+            )
+        )
+
+    state = RescheduleState(
+        goal_id=goal.id,
+        goal_title=goal.title,
+        deadline=goal.deadline,
+        available_hours_weekday=goal.available_hours_weekday or 2,
+        available_hours_weekend=goal.available_hours_weekend or 4,
+        milestones=milestones_info,
+        analysis=None,
+        overall_summary=None,
+        at_risk=None,
+        suggestions=None,
+        error=None
+    )
+
+    # 3. Pipeline 호출
+    result = await reschedule_pipeline.ainvoke(state)
+    
+    if result.get("error"):
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    # 4. output 조립 (TodoSuggestion 구조 준수)
+    suggestions = []
+    for sug in result.get("suggestions", []):
+        todo_id = sug["todo_id"]
+        todo = todo_map.get(todo_id)
+        if not todo:
+            continue
+        suggestions.append(
+            TodoSuggestion(
+                todo_id=todo_id,
+                title=todo.title,
+                current_due_date=todo.due_date,
+                suggested_due_date=sug["suggested_due_date"],
+                reason=sug["reason"]
+            )
+        )
+
+    return SuggestionResponse(
+        goal_id=goal.id,
+        overall_summary=result.get("overall_summary", ""),
+        at_risk=bool(result.get("at_risk", False)),
+        suggestions=suggestions
+    )

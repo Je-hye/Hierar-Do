@@ -3,7 +3,7 @@ from openai import AsyncOpenAI
 
 # OpenAI client initialization
 # It uses the OPENAI_API_KEY environment variable by default
-client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY", "mock_key_for_testing"))
 
 async def get_embedding(text: str) -> list[float]:
     """
@@ -45,30 +45,28 @@ async def store_goal_embedding(goal_id: int, user_id: int):
             return
 
         # 1. 목표 데이터 요약 문자열 생성
-    
-    # 1. 목표 데이터 요약 문자열 생성
-    # goal.milestones와 goal.milestones.todos가 로드되어 있어야 합니다.
-    milestones_info = []
-    for m in getattr(goal, "milestones", []):
-        todos_info = [f"  - {t.title} ({t.estimated_minutes}분)" for t in getattr(m, "todos", [])]
-        milestones_info.append(f"마일스톤: {m.title}\n" + "\n".join(todos_info))
-    
-    summary = (
-        f"목표: {goal.title}\n"
-        f"원래 입력: {goal.raw_input}\n"
-        f"기간: ~{goal.deadline}\n"
-        f"할당 시간: 평일 {goal.available_hours_weekday}시간, 주말 {goal.available_hours_weekend}시간\n\n"
-        + "\n\n".join(milestones_info)
-    )
-    
-    # 2. 임베딩 생성
-    vector = await get_embedding(summary)
-    
-    # 3. DB에 저장 (기존에 있으면 업데이트)
-    from sqlalchemy import select
-    result = await db.execute(select(GoalEmbedding).where(GoalEmbedding.goal_id == goal.id))
-    existing = result.scalar_one_or_none()
-    
+        # goal.milestones와 goal.milestones.todos가 로드되어 있어야 합니다.
+        milestones_info = []
+        for m in getattr(goal, "milestones", []):
+            todos_info = [f"  - {t.title} ({t.estimated_minutes}분)" for t in getattr(m, "todos", [])]
+            milestones_info.append(f"마일스톤: {m.title}\n" + "\n".join(todos_info))
+        
+        summary = (
+            f"목표: {goal.title}\n"
+            f"원래 입력: {goal.raw_input}\n"
+            f"기간: ~{goal.deadline}\n"
+            f"할당 시간: 평일 {goal.available_hours_weekday}시간, 주말 {goal.available_hours_weekend}시간\n\n"
+            + "\n\n".join(milestones_info)
+        )
+        
+        # 2. 임베딩 생성
+        vector = await get_embedding(summary)
+        
+        # 3. DB에 저장 (기존에 있으면 업데이트)
+        from sqlalchemy import select
+        result = await db.execute(select(GoalEmbedding).where(GoalEmbedding.goal_id == goal.id))
+        existing = result.scalar_one_or_none()
+        
         if existing:
             existing.embedding = vector
             existing.content_summary = summary

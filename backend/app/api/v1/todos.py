@@ -99,6 +99,7 @@ async def create_todo(req: CreateTodoRequest, db: AsyncSession = Depends(get_db)
         due_date=req.due_date,
         estimated_minutes=req.estimated_minutes,
         suggested_by_ai=False,
+        actual_minutes=req.actual_minutes,
     )
     db.add(todo)
     await db.commit()
@@ -117,6 +118,8 @@ async def update_todo(todo_id: int, req: UpdateTodoRequest, db: AsyncSession = D
         todo.due_date = req.due_date
     if req.estimated_minutes is not None:
         todo.estimated_minutes = req.estimated_minutes
+    if req.actual_minutes is not None:
+        todo.actual_minutes = req.actual_minutes
     await db.commit()
     await db.refresh(todo)
     return TodoOut.model_validate(todo)

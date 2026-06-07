@@ -19,5 +19,6 @@ class Todo(Base):
     estimated_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
     is_done: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     suggested_by_ai: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    actual_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     milestone = relationship("Milestone", back_populates="todos")
